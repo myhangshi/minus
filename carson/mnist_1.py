@@ -9,8 +9,13 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
-import syft 
 import syft as sy 
+
+import torch
+import torch.nn as nn
+from torch.autograd import Variable as Var
+import torch.optim as optim
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -31,16 +36,12 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
+
 def train(epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
-        if batch_idx + 1 % 100 == 0: 
-    	    print(batch_idx)
-    	    break 
-
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
         output = model(data)
@@ -53,7 +54,6 @@ def train(epoch):
                 100. * batch_idx / len(train_loader), loss.data[0]))
 
 def test():
-	#with torch.no_grad():
     model.eval()
     test_loss = 0
     correct = 0
@@ -71,27 +71,6 @@ def test():
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-
-def train_distributed(epoch, datasets, my_model):
-    my_model.train()
-    for batch_idx, (data, target) in enumerate(datasets):
-        worker = data.location
-        my_model.send(worker)
-
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-
-        optimizer.zero_grad()
-        output = my_model(data)
-        loss = F.nll_loss(output, target)
-        loss.backward()
-        my_model.get()
-        optimizer.step()
-        #if batch_idx % args.log_interval == 0:
-        #    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #        epoch, batch_idx * len(data), len(train_loader.dataset),
-        #        100. * batch_idx / len(train_loader), loss.data[0]))
 
 def train_one(): 
 	model.train()
@@ -147,17 +126,12 @@ train_loader = torch.utils.data.DataLoader(
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size=args.batch_size, shuffle=True, **kwargs)
-
 test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size=args.test_batch_size, shuffle=True, **kwargs)
-
-#train_data = datasets.MNIST('../data', train=True, download=True)
-#test_data = datasets.MNIST('../data', train=False,  download=True)
-
 
 # Model Initialization 
 model = Net()
@@ -167,64 +141,21 @@ if args.cuda:
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 
-#train(1) 
-#exit() 
-
-# Hook onto PySyft 
-hook = sy.TorchHook(verbose=False)
+# this is our hook
+hook = sy.TorchHook()
 me = hook.local_worker
-#me.hook = hook
 
-bob = sy.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
-alice = sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
-me.is_client_worker = False 
+bob = sy.VirtualWorker(id=1,hook=hook)
+alice = sy.VirtualWorker(id=2,hook=hook)
 
-compute_nodes = [bob, alice]
-#me.add_workers([bob, alice])
-bob.add_workers([alice])
-alice.add_workers([bob])
+me.add_worker(bob)
+me.add_worker(alice)
 
-
-# Hook onto PySyft 
-train_distributed_dataset = []
-
-for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx + 1 % 10 == 0: 
-    	print(batch_idx)
-    	break 
-    data = Variable(torch.from_numpy(data.numpy()))
-    target = Variable(target)
-    data.send(compute_nodes[batch_idx % len(compute_nodes)])
-    target.send(compute_nodes[batch_idx % len(compute_nodes)])
-    train_distributed_dataset.append((data, target))
- 
-
-model.train()
-for batch_idx, (data, target) in enumerate(train_distributed_dataset):
-        
-    if args.cuda:
-            data, target = data.cuda(), target.cuda()
-    
-    worker = data.location
-    model.send(worker)
-
-    #data, target = Variable(data), Variable(target)
-    
-    optimizer.zero_grad()
-    output = model(data)
-    loss = F.nll_loss(output, target)
-    loss.backward()
-    model.get()
-    optimizer.step()
-
-# Do the work 
-
-#train_distributed(1, train_distributed_dataset, model)
 
 #for epoch in range(1, args.epochs + 1):
-#for epoch in range(1, 11):
-#    train(epoch)
-#    test()
+for epoch in range(1, 11):
+    train(epoch)
+    test()
 
 
 # -*- coding: utf-8 -*-
