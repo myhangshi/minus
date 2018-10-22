@@ -126,6 +126,8 @@ alice.add_workers([me, bob])
 remote_dataset = (list(),list())
 
 for batch_idx, (data,target) in enumerate(train_loader):
+    if batch_idx > 20: 
+        break 
     data = Variable(data)
     target = Variable(target)
     data.send(compute_nodes[batch_idx % len(compute_nodes)])
@@ -136,59 +138,71 @@ for batch_idx, (data,target) in enumerate(train_loader):
 bobs_optimizer = optim.SGD(bobs_model.parameters(), lr=args.lr, momentum=args.momentum)
 alices_optimizer = optim.SGD(alices_model.parameters(), lr=args.lr, momentum=args.momentum)
 
+print("model stuff ")
 models = [bobs_model, alices_model]
 params = [list(bobs_model.parameters()), list(alices_model.parameters())]
 optimizers = [bobs_optimizer, alices_optimizer]
 
-
 def train():
 
-    for remote_index in range(len(compute_nodes)):
-        for data_index in range(len(remote_dataset[0])-1):
+    #for data_index in range(len(remote_dataset[0])-1):
+    for data_index in range(3):
+        for remote_index in range(len(compute_nodes)):
+        
             # update remote models
             data, target = remote_dataset[remote_index][data_index]
             models[remote_index] = update(data, target, models[remote_index], optimizers[remote_index])
 
-        new_params = list()
+        #new_params = list()
 
-        for param_i in range(len(params[0])):
+        #for param_i in range(len(params[0])):
 
-            spdz_params = list()
-            for remote_index in range(len(compute_nodes)):
-                spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
+        #    spdz_params = list()
+        #    for remote_index in range(len(compute_nodes)):
+        #        spdz_params.append((params[remote_index][param_i].data+0).fix_precision().share(bob, alice).get())
 
-            new_param = (spdz_params[0] + spdz_params[1]).get().decode()/2
-            new_params.append(new_param)
+        #    new_param = (spdz_params[0] + spdz_params[1]).get().decode()/2
+        #    new_params.append(new_param)
 
-        for model in params:
-            for param in model:
-                param.data *= 0
+        #for model in params:
+        #    for param in model:
+        #        param.data *= 0
 
         for model in models:
             model.get()
 
-        for remote_index in range(len(compute_nodes)):
-            for param_index in range(len(params[remote_index])):
-                params[remote_index][param_index].data.set_(new_params[param_index])
+        #for remote_index in range(len(compute_nodes)):
+        #    for param_index in range(len(params[remote_index])):
+        #        params[remote_index][param_index].data.set_(new_params[param_index])
 
 
 def test():
     models[0].eval()
     test_loss = 0
-    with torch.no_grad(): 
-        for data, target in test_loader:
-            data, target = Variable(data, volatile=True), Variable(target)
-            output = models[0](data)
-            test_loss += F.mse_loss(output, target.float(), size_average=False).data[0] # sum up batch loss
-            pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        
-    test_loss /= len(test_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}\n'.format(test_loss))
+    correct = 0
 
+    for data, target in test_loader:
+        data, target = Variable(data, volatile=True), Variable(target)
+        output = models[0](data)
+        
+        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
+        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
+        correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
+
+
+    test_loss /= len(test_loader.dataset)
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        test_loss, correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
+
+
+    
 for epoch in range(1, args.epochs + 1):
     print(epoch)
     train()
-    test()
+
+
+test()
 
 
 
