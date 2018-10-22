@@ -60,6 +60,7 @@ use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=True, download=True,
                    transform=transforms.Compose([
@@ -67,6 +68,7 @@ train_loader = torch.utils.data.DataLoader(
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size=args.batch_size, shuffle=True, **kwargs)
+
 test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
@@ -87,6 +89,21 @@ def update(data, target, model, optimizer):
     loss.backward()
     optimizer.step()
     return model
+
+
+
+def my_train(args, model, device, train_loader, optimizer, epoch):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        optimizer.step()
+
+    return 
+
 
 model = Net()
 model_params = list(model.parameters())
@@ -110,7 +127,7 @@ remote_dataset = (list(),list())
 
 for batch_idx, (data,target) in enumerate(train_loader):
     data = Variable(data)
-    target = Variable(target.float())
+    target = Variable(target)
     data.send(compute_nodes[batch_idx % len(compute_nodes)])
     target.send(compute_nodes[batch_idx % len(compute_nodes)])
     remote_dataset[batch_idx % len(compute_nodes)].append((data, target))
@@ -126,9 +143,9 @@ optimizers = [bobs_optimizer, alices_optimizer]
 
 def train():
 
-    for data_index in range(len(remote_dataset[0])-1):
-        # update remote models
-        for remote_index in range(len(compute_nodes)):
+    for remote_index in range(len(compute_nodes)):
+        for data_index in range(len(remote_dataset[0])-1):
+            # update remote models
             data, target = remote_dataset[remote_index][data_index]
             models[remote_index] = update(data, target, models[remote_index], optimizers[remote_index])
 
