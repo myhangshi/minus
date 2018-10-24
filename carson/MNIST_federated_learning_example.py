@@ -79,74 +79,78 @@ model = Net()
 if args.cuda:
     model.cuda()
 
-optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
-from syft.core.hooks import TorchHook
-from syft.core.workers import VirtualWorker
+
+bobs_optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+alice_optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+
+
+optimizers = [bobs_optimizer,  alice_optimizer]
+
+
+#from syft.core.hooks import TorchHook
+#from syft.core.workers import VirtualWorker
 import torch
 import torch.nn as nn
 from torch.autograd import Variable as Var
 import torch.optim as optim
+
+import syft as sy 
+
+
 # this is our hook
-hook = TorchHook()
+hook = sy.TorchHook()
 me = hook.local_worker
+me.is_client_worker = False 
 
-bob = VirtualWorker(id=1,hook=hook)
-alice = VirtualWorker(id=2,hook=hook)
+bob = sy.VirtualWorker(id='bob',hook=hook, is_client_worker=False)
+alice = sy.VirtualWorker(id='alice',hook=hook, is_client_worker=False)
 
-me.add_worker(bob)
-me.add_worker(alice)
+#me.add_workers([bob, alice])
+bob.add_workers([alice])
+alice.add_workers([bob])
 
 compute_nodes = [bob, alice]
-
-
-#model.train()
-#for batch_idx, (data, target) in enumerate(train_loader):
-#    if args.cuda:
-#        data, target = data.cuda(), target.cuda()
-#    data, target = Variable(data), Variable(target)
-#    optimizer.zero_grad()
-#    output = model(data)
-#    loss = F.nll_loss(output, target)
-#    loss.backward()
-#    break
-
 train_distributed_dataset  = []
+
 i = 0
 for batch_idx, (data,target) in enumerate(train_loader):
-    data = Variable(data)
+    if batch_idx + 1 % 100 == 0: 
+        print(batch_idx)
+        break 
+    data = Variable(torch.from_numpy(data.numpy()))
     #print (data.shape)
     #target = Variable(target.float())
-    target = Variable(target.long())
+    target = Variable(target)
     data.send(compute_nodes[batch_idx % len(compute_nodes)])
     target.send(compute_nodes[batch_idx % len(compute_nodes)])
     train_distributed_dataset.append((data, target))
-
+#bobs_optimizer.send(bob)
+#alice_optimizer.send(alice)
 
 len_train_loader = len(train_loader.dataset) #needed below for loss and accuracy calculation
-train_loader = None #free memory
+#train_loader = None #free memory
 
 def train(epoch):
     model.train()
+    print("get into train function ")
     #for batch_idx, (data, target) in enumerate(train_loader):
     for batch_idx, (data,target) in enumerate(train_distributed_dataset):
-        model.send(data.owners[0])
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
+        worker = data.location
+        model.send(worker)
+
+        optimizer = optimizers[batch_idx % len(compute_nodes)]
         #data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()
+        model.get()
         optimizer.step()
-        model.get_()
-        if batch_idx % args.log_interval == 0:
-            #print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-            #    epoch, batch_idx * len(data), len(train_loader.dataset),
-            #    100. * batch_idx / len(train_loader), loss.data[0]))
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len_train_loader,
-                100. * batch_idx / len_train_loader, loss.data[0]))
+        
+        
+    return 
+    
 def test():
     model.eval()
     test_loss = 0
@@ -168,7 +172,8 @@ def test():
         test_loss, correct, len_train_loader,
         100. * correct / len_train_loader))
 
-for epoch in range(1, args.epochs + 1):
+#for epoch in range(1, args.epochs + 1):
+for epoch in range(1, 3):
     train(epoch)
-    test()
+    #test()
 
