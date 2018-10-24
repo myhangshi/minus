@@ -197,7 +197,8 @@ def test():
 
 
     
-for epoch in range(1, args.epochs + 1):
+#for epoch in range(1, args.epochs + 1):
+for epoch in range(1, 6):
     print(epoch)
     train()
 
