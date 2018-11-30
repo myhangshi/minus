@@ -1,0 +1,7 @@
+mask-rcnn-coco
+├── colors.txt
+├── frozen_inference_graph.pb
+├── mask_rcnn_inception_v2_coco_2018_01_28.pbtxt
+└── object_detection_classes_coco.txt
+
+0 directories, 4 files
