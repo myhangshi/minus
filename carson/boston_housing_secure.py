@@ -110,7 +110,7 @@ def update(data, target, model, optimizer):
     pred = model(data)
     loss = F.mse_loss(pred, target.float())
     loss.backward()
-    bobs_optimizer.step()
+    optimizer.step()
     return model
 
 bobs_optimizer = optim.SGD(bobs_model.parameters(), lr=args.lr, momentum=args.momentum)

@@ -126,8 +126,8 @@ alice.add_workers([me, bob])
 remote_dataset = (list(),list())
 
 for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx > 20: 
-        break 
+    #if batch_idx > 20: 
+    #    break 
     data = Variable(data)
     target = Variable(target)
     data.send(compute_nodes[batch_idx % len(compute_nodes)])
@@ -145,8 +145,8 @@ optimizers = [bobs_optimizer, alices_optimizer]
 
 def train():
 
-    #for data_index in range(len(remote_dataset[0])-1):
-    for data_index in range(3):
+    for data_index in range(len(remote_dataset[0])-1):
+    #for data_index in range(1000):
         for remote_index in range(len(compute_nodes)):
         
             # update remote models
@@ -197,7 +197,8 @@ def test():
 
 
     
-for epoch in range(1, args.epochs + 1):
+#for epoch in range(1, args.epochs + 1):
+for epoch in range(1, 6):
     print(epoch)
     train()
 

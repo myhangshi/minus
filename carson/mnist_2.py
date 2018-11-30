@@ -72,27 +72,6 @@ def test():
         100. * correct / len(test_loader.dataset)))
 
 
-def train_distributed(epoch, datasets, my_model):
-    my_model.train()
-    for batch_idx, (data, target) in enumerate(datasets):
-        worker = data.location
-        my_model.send(worker)
-
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-
-        optimizer.zero_grad()
-        output = my_model(data)
-        loss = F.nll_loss(output, target)
-        loss.backward()
-        my_model.get()
-        optimizer.step()
-        #if batch_idx % args.log_interval == 0:
-        #    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #        epoch, batch_idx * len(data), len(train_loader.dataset),
-        #        100. * batch_idx / len(train_loader), loss.data[0]))
-
 def train_one(): 
 	model.train()
 	for batch_idx, (data, target) in enumerate(train_loader):
@@ -104,6 +83,28 @@ def train_one():
 	    loss = F.nll_loss(output, target)
 	    loss.backward()
 	    break
+
+
+def train_epoch(): 
+    print("model inside train epoch ")
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_distributed_dataset):
+        
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+    
+        worker = data.location
+        model.send(worker)
+
+        #data, target = Variable(data), Variable(target)
+    
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        model.get()
+        optimizer.step()
+    return 
 
 #
 # main program logic starts 
@@ -189,7 +190,7 @@ alice.add_workers([bob])
 train_distributed_dataset = []
 
 for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx + 1 % 10 == 0: 
+    if batch_idx + 1 % 100 == 0: 
     	print(batch_idx)
     	break 
     data = Variable(torch.from_numpy(data.numpy()))
@@ -199,23 +200,11 @@ for batch_idx, (data,target) in enumerate(train_loader):
     train_distributed_dataset.append((data, target))
  
 
-model.train()
-for batch_idx, (data, target) in enumerate(train_distributed_dataset):
-        
-    if args.cuda:
-            data, target = data.cuda(), target.cuda()
-    
-    worker = data.location
-    model.send(worker)
 
-    #data, target = Variable(data), Variable(target)
-    
-    optimizer.zero_grad()
-    output = model(data)
-    loss = F.nll_loss(output, target)
-    loss.backward()
-    model.get()
-    optimizer.step()
+for epoch in range(1, 3):
+    train_epoch()
+    test()
+
 
 # Do the work 
 
