@@ -1,11 +1,19 @@
 import syft as sy
 import copy
-hook = sy.TorchHook()
+
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
 import torch.nn.functional as F
 import argparse
+
+from syft.core import utils
+import torch.nn.functional as F
+import json
+import random
+from syft.core.frameworks.torch import utils as torch_utils
+from torch.autograd import Variable
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -25,8 +33,14 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
+
+#args = parser.parse_args([])
+#args.cuda = not args.no_cuda and torch.cuda.is_available()
 args = parser.parse_args([])
-args.cuda = not args.no_cuda and torch.cuda.is_available()
+
+torch.manual_seed(args.seed)
+kwargs = {}
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -47,8 +61,11 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 model = Net()
+bobs_opt = optim.SGD(params=model.parameters(),lr=0.1)
 
-kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+
+#kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=True, download=True,
                    transform=transforms.Compose([
@@ -56,6 +73,7 @@ train_loader = torch.utils.data.DataLoader(
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size=args.batch_size, shuffle=True, **kwargs)
+
 test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
@@ -69,31 +87,47 @@ dataset_train = datasets.MNIST('../data/', train=True, download=True,
                        transforms.Normalize((0.1307,), (0.3081,))
                 ]))
 
-# create a couple workers
+hook = sy.TorchHook()
 
-bob = sy.VirtualWorker(id="bob")
-alice = sy.VirtualWorker(id="alice")
-secure_worker = sy.VirtualWorker(id="secure_worker")
+# create a couple workers
+#bob = sy.VirtualWorker(id="bob")
+#alice = sy.VirtualWorker(id="alice")
+bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
+alice = sy.VirtualWorker(id="alice",hook=hook, is_client_worker=False)
+
+#secure_worker = sy.VirtualWorker(id="secure_worker")
+secure_worker = hook.local_worker
+secure_worker.is_client_worker = False
 
 bob.add_workers([alice, secure_worker])
 alice.add_workers([bob, secure_worker])
 secure_worker.add_workers([alice, bob])
 
 train_distributed_dataset  = []
+
+print(bob._objects)
+
+
 for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx > 4: break
-    data = sy.Var(data)
-    target = sy.Var(target.long())
+    if batch_idx > 1000: break
+    #data = sy.Var(data)
+    #target = sy.Var(target.long())
+    data = Variable(data)
+    target = Variable(target)
     data.send(bob)
     target.send(bob)
     train_distributed_dataset.append((data, target))
 
-bobs_model = model.copy().send(bob)
+#bobs_model = model.copy().send(bob)
+
+bobs_model = model.send(bob)
+
 #alices_model = model.copy().send(alice)
 
 #bobs_model = Net()
 
-bobs_opt = optim.SGD(params=bobs_model.parameters(),lr=0.1)
+
+#bobs_opt.send(bob)
 #alices_opt = optim.SGD(params=alices_model.parameters(),lr=0.1)
 
 #bobs_model = bobs_model.send(bob)
@@ -102,7 +136,7 @@ bobs_opt = optim.SGD(params=bobs_model.parameters(),lr=0.1)
 for batch_idx, (data,target) in enumerate(train_distributed_dataset):
 
     print(data)
-    bobs_model.send(data.location)
+    #bobs_model.send(data.location)
     # Train Bob's Model
     bobs_opt.zero_grad() # this is where it breaks.........
     bobs_pred = bobs_model(data)

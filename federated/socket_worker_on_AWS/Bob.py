@@ -25,7 +25,7 @@ me.is_client_worker = False
 
 local_worker = sy.SocketWorker(hook=hook,
                             id='bob',
-			    hostname="172.31.40.208",
+			    hostname="100.65.100.179",
                             port=2005,
                             is_client_worker=False)
 

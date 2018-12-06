@@ -63,7 +63,7 @@ kwargs = {}
 
 
 import pickle
-f = open('../other/data/boston_housing.pickle','rb')
+f = open('boston_housing.pickle','rb')
 ((X, y), (X_test, y_test)) = pickle.load(f)
 f.close()
 
@@ -130,7 +130,8 @@ import random
 from syft.core.frameworks.torch import utils as torch_utils
 from torch.autograd import Variable
 
-local_worker = sy.SocketWorker(id="local", port=2009, hook=None, is_client_worker=False)
+#local_worker = sy.SocketWorker(id="local", port=2009, hook=None, is_client_worker=False)
+local_worker = sy.SocketWorker(id="local", port=2009, hook=None)
 hook = sy.TorchHook(local_worker=local_worker, verbose=False)
 me = hook.local_worker
 me.hook = hook
@@ -139,14 +140,17 @@ me.hook = hook
 
 # In[6]:
 
-alice = sy.SocketWorker(id="alice", hostname="54.173.218.212", port=2006, hook=hook, is_pointer=True, is_client_worker=False)
+alice = sy.SocketWorker(id="alice", hostname="100.65.100.179", port=2006, hook=hook, is_pointer=True, is_client_worker=False)
 #alice = sy.SocketWorker(id="alice", hostname="172.31.33.80", port=2006, hook=hook, is_pointer=True, is_client_worker=False)
 
-bob = sy.SocketWorker(id="bob", hostname="18.208.151.226", port=2005, hook=hook, is_pointer=True, is_client_worker=False)
+bob = sy.SocketWorker(id="bob", hostname="100.65.100.179", port=2005, hook=hook, is_pointer=True, is_client_worker=False)
 
 compute_nodes = [bob, alice]
 
 me.add_workers([bob, alice])
+bob.add_workers([me,alice])
+alice.add_workers([me,bob])
+
 #bob.add_workers([me, alice])
 #alice.add_workers([me, bob])
 
@@ -227,6 +231,7 @@ def test():
 
 # In[11]:
 
+train(5) 
 
 test()
 
