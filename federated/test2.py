@@ -5,7 +5,7 @@ from torchvision import datasets, transforms
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-
+from syft import optim
 
 
 
@@ -72,6 +72,9 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
+        print("x size is ", x.shape)
+        
+
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
@@ -151,15 +154,25 @@ me.add_worker(bob)
 train_distributed_dataset  = []
 
 
-for batch_idx, (data,target) in enumerate(train_dataset):
+for batch_idx, (dk,target) in enumerate(train_dataset):
     #print("data set ", batch_idx, data, target)
+    #if batch_idx 
     if batch_idx % 2000 == 1999: 
-        print("data set ", batch_idx, data, target)
+        print("data set ", batch_idx, dk.shape, target.shape)
     #data = torch.Tensor(data)
     #target = torch.Tensor(target
+    if batch_idx == 6000: 
+        break 
 
-    data = Variable(data)
-    target = Variable(target)
+
+    data = torch.from_numpy(dk.unsqueeze(0).numpy())
+
+
+    #target = Variable(target.unsqueeze(0))
+
+    if batch_idx % 2000 == 1999: 
+        print("data set new ", batch_idx, data.shape, target.shape)
+    
 
     data.send(bob)
     target.send(bob)
@@ -178,6 +191,8 @@ bobs_model = bobs_model.send(bob)
 #    print(p.get().shape, p.id)
 
 #for i in range(10):
+bobs_model.train() 
+
 for batch_idx, (data,target) in enumerate(train_distributed_dataset):
 
     #print(data)
@@ -185,13 +200,16 @@ for batch_idx, (data,target) in enumerate(train_distributed_dataset):
     # Train Bob's Model
     bobs_opt.zero_grad() # this is where it breaks.........
     bobs_pred = bobs_model(data)
+    print("debugging dim here is ", bobs_pred.shape, target.shape)
     bobs_loss = F.nll_loss(bobs_pred, target)
+    
+    bobs_opt.step()
+    bobs_loss = bobs_loss.get()
+    
     bobs_loss.backward()
 
-    bobs_opt.step()
-    bobs_loss = bobs_loss.get().data[0]
-    if batch_idx % 1000 == 0:
-        print("the loss now is %f ", bobs_loss)
+    if batch_idx % 1000 == 999:
+        print("the loss now is %f ", bobs_loss.data[0])
 
 
 
