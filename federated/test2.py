@@ -7,7 +7,7 @@ from torch.autograd import Variable
 
 from syft import optim
 
-
+import numpy as np
 
 import argparse
 import syft as sy
@@ -150,6 +150,16 @@ me.add_worker(bob)
 #bob.add_workers([alice, secure_worker])
 #alice.add_workers([bob, secure_worker])
 #secure_worker.add_workers([alice, bob])
+if True: 
+    data = torch.from_numpy(np.random.rand(1, 1, 8, 8)) 
+    print(data) 
+
+    bobs_pred = bobs_model(data)
+    print("bobs pred", bobs_pred) 
+    exit() 
+
+exit() 
+
 
 train_distributed_dataset  = []
 
