@@ -145,7 +145,7 @@ def federated_train(model, learning_rate, data):
 
 model = initial_model
 learning_rate = 0.1
-for round_num in range(5):
+for round_num in range(50):
   model = federated_train(model, learning_rate, federated_train_data)
   learning_rate = learning_rate * 0.9
   loss = federated_eval(model, federated_train_data)

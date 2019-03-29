@@ -59,8 +59,6 @@ federated_train_data = make_federated_data(emnist_train, sample_clients)
 
 len(federated_train_data), federated_train_data[0]
 
-
-
 def create_compiled_keras_model():
   model = tf.keras.models.Sequential([
       tf.keras.layers.Dense(
@@ -101,7 +99,7 @@ state, metrics = iterative_process.next(state, federated_train_data)
 print('round  1, metrics={}'.format(metrics))
 
 
-for round_num in range(2, 50):
+for round_num in range(2, 11):
   state, metrics = iterative_process.next(state, federated_train_data)
   print('round {:2d}, metrics={}'.format(round_num, metrics))
 
