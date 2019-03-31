@@ -9,18 +9,20 @@ import torch.optim as optim
 from torchvision import transforms
 import json
 import zmq
-import datasets
+
+from torchvision import transforms, datasets
+
 
 # Prepare 0MQ context and sockets
 context = zmq.Context()
 
 # receiver to send param to server and get acknowledgement back.
 receiver = context.socket(zmq.REQ)
-receiver.connect("tcp://10.145.254.121:5555")
+receiver.connect("tcp://localhost:5555")
 
 # Subscribe to parameters published by the server
 subscriber = context.socket(zmq.SUB)
-subscriber.connect("tcp://10.145.254.121:5556")
+subscriber.connect("tcp://localhost:5556")
 subscriber.setsockopt(zmq.SUBSCRIBE, b"1")
 
 # Initialize poll set -- to read from both the sockets.
@@ -57,14 +59,14 @@ class MNISTTrainActor(object):
 
         kwargs = {'num_workers': 1, 'pin_memory': True}
         self.train_loader = torch.utils.data.DataLoader(
-            datasets.MNIST('/data/mnist', train=True, download=True,
+            datasets.MNIST('./data/mnist', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
             batch_size=64, shuffle=True, **kwargs)
         self.test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('/data/mnist', train=False, transform=transforms.Compose([
+        datasets.MNIST('./data/mnist', train=False, transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
@@ -130,7 +132,7 @@ class MNISTTrainActor(object):
         #For REQ-REP send the first message here
         if not init:
             #TODO send a control message instead of weights to indicate start of transmission
-            receiver.send(weights)
+            receiver.send_string(weights)
 
         socks = dict(poller.poll())
 
@@ -151,7 +153,7 @@ class MNISTTrainActor(object):
             print("RECEIVED WEIGHTS......................................")
             #print(params['fc1.weight'][0])
             self.model.load_state_dict(params)
-            receiver.send(weights)
+            receiver.send_string(weights)
 
 def train():
     train_actor = MNISTTrainActor()

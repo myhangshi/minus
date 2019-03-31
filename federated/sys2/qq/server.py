@@ -12,6 +12,9 @@ context = zmq.Context()
 # Socket to receive parameter from edge devices(nodes)
 receiver =  context.socket(zmq.REP)
 receiver.setsockopt(zmq.LINGER, 0)
+
+print("getting into zeromq setting up 1 ")
+
 receiver.bind("tcp://*:%s" % portREP)
 
 # Socket to send parameters to edge devices(nodes)
@@ -27,13 +30,18 @@ def main():
         try:
             if num_clients < 2:
                 msg = receiver.recv()
+                #print("the message is ", msg)
                 num_clients += 1
                 parameter_queue.append(msg)
-                #print(len(parameter_queue))
+                print(len(parameter_queue))
                 #time.sleep(1) #for testing only
                 # send synchronization reply
                 #receiver.send(b'')
-                receiver.send(b'test')
+
+                #need to figure out what is the best way
+                receiver.send_string('test')
+
+
             #send aggregated parameters to the edge nodes.
             else:
                 params = aggregatedparams(parameter_queue)
@@ -47,7 +55,9 @@ def aggregatedparams(parameter_queue):
     #for params in parameter_queue:
     for i in range(0, len(parameter_queue)):
         params = parameter_queue[i]
+
         params = json.loads(params)
+
         for p in params:
             params[p] = np.asarray(params[p])
         #print params
@@ -57,13 +67,15 @@ def aggregatedparams(parameter_queue):
                     for k in parameter_queue[0]}
     for k in params:
         mean_params[k] = mean_params[k].tolist()
-    for k in mean_params: print k
+    for k in mean_params: 
+        print(k)
     return mean_params
 
 def publish(params):
     msg = json.dumps(params)
     topic = 1
-    publisher.send("%d %s" % (topic, msg))
+    #print("topic: %d msg: %s" % (topic, msg))
+    publisher.send_string("%d %s" % (topic, msg))
 
 if __name__ == "__main__":
     main()

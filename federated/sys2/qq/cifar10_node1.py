@@ -14,12 +14,12 @@ transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-trainset = torchvision.datasets.CIFAR10(root='/data', train=True,
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
                                           shuffle=True, num_workers=2)
 
-testset = torchvision.datasets.CIFAR10(root='/data', train=False,
+testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=4,
                                          shuffle=False, num_workers=2)
@@ -58,11 +58,11 @@ context = zmq.Context()
 
 # receiver to send param to server and get acknowledgement back.
 receiver = context.socket(zmq.REQ)
-receiver.connect("tcp://10.145.254.121:5555")
+receiver.connect("tcp://localhost:5555")
 
 # Subscribe to parameters published by the server
 subscriber = context.socket(zmq.SUB)
-subscriber.connect("tcp://10.145.254.121:5556")
+subscriber.connect("tcp://localhost:5556")
 subscriber.setsockopt(zmq.SUBSCRIBE, b"1")
 
 # Initialize poll set -- to read from both the sockets.
@@ -100,8 +100,8 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
 print(device)
 
 net = Net()
@@ -158,7 +158,7 @@ def run_train():
 def run_test():
     correct = 0
     total = 0
-    net.cuda()
+    #net.cuda()
     with torch.no_grad():
         for data in testloader:
             images, labels = data
@@ -196,7 +196,7 @@ def sendreceiveweights(init, weights):
     #For REQ-REP send the first message here
     if not init:
         #TODO send a control message instead of weights to indicate start of transmission
-        receiver.send(weights)
+        receiver.send_string(weights)
 
     socks = dict(poller.poll())
 
@@ -217,7 +217,7 @@ def sendreceiveweights(init, weights):
         print("RECEIVED WEIGHTS......................................")
         #print(params['fc1.weight'][0])
         net.load_state_dict(params)
-        receiver.send(weights)
+        receiver.send_string(weights)
 
 def train():
     step = 0
