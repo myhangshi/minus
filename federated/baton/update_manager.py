@@ -62,7 +62,12 @@ class UpdateManager(object):
     def client_end(self, client_id, response):
         #if not self.in_progress:
         #    raise UpdateNotInProgress
+        
+        #client might not be there already for certain scenarios 
+        self.clients.add(client_id)
+        
         self.client_responses[client_id] = response
+        
         print("Update finished: {} [{}/{}]".format(
             client_id,
             len(self.client_responses),

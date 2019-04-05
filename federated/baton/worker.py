@@ -118,10 +118,12 @@ class ExperimentWorker(object):
     async def report_update(self, update_name, n_samples, loss_history):
         url = urljoin(self.manager_url, 'update')
         url += "?client_id={}&key={}".format(self.client_id, self.key)  # TODO: fix this
+        
         state = {
             'state_dict':  self.model.state_dict(),
             'n_samples':  n_samples,
             'update_name':  update_name,
+            'client_id': self.client_id, 
             'loss_history':  loss_history,
         }
         data = pickle.dumps(state)

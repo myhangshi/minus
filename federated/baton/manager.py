@@ -104,10 +104,14 @@ class Experiment(object):
         return dict(result)
 
     async def update(self, request):
-        print("receive an update ")
+        
         client_id = self.client_manager.verify_request(request)
+        print("receive an update from ", client_id)
+        
         body = await request.read()
         data = pickle.loads(body)
+
+        print("the data from update client_id is ", data)
         update_name = data['update_name']
 
         #if (not self.update_manager.in_progress or
@@ -117,6 +121,8 @@ class Experiment(object):
         self.update_manager.client_end(client_id, data)
         self.client_manager[client_id]['last_update'] = update_name
         self.client_manager[client_id]['num_updates'] += 1
+        self.client_manager[client_id]['state_dict'] = data['state_dict']
+        
         print("about to end update in manager ")
 
         if not self.update_manager.clients_left:
@@ -130,7 +136,7 @@ class Experiment(object):
         #    return
         
         update_name = self.update_manager.update_name
-        print("Finishing 1 update:", update_name)
+        #print("Finishing 1 update:", update_name)
         
         datas = self.update_manager.end_update()
         
