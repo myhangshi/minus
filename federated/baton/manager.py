@@ -52,7 +52,7 @@ class Experiment(object):
     async def get_client_updates(self, request):
         print("inside get_client_updates ")
 
-'''
+        '''
         self.update_manager.client_end(client_id, data)
         self.client_manager[client_id]['last_update'] = update_name
         self.client_manager[client_id]['num_updates'] += 1
@@ -61,12 +61,28 @@ class Experiment(object):
         self.clients = {}
 
         for c in self.clients
-'''        
+        '''        
+        all_clients = self.client_manager.clients
+        '''
+        for c in all_clients: 
+            print("######### LOOP ONE MORE TIME  ##########")
+            print("dict is ", all_clients[c]['client_id'])
+            params = all_clients[c]['stat_dict']
+            for p in params:
+                params[p] = np.asarray(params[p])
+            all_clients[c]['stat_dict'] = params     
+        '''
 
+        mean_params = {k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients)) 
+                              for k in all_clients[0]  }
+        #for k in mean_params:
+        #    mean_params[k] = mean_params[k].tolist()
+        
+        self.model.load_state_dict(mean_params) 
 
+        return web.json_response("OK")    
 
-        return web.json_response("OK")
-
+    
     async def get_loss_history(self, request):
         return web.json_response(self._update_loss_history)
 

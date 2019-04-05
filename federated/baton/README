@@ -1,0 +1,7 @@
+python mnist_demo.py manager localhost 6666
+
+
+python mnist_demo.py worker localhost 6667 
+
+
+

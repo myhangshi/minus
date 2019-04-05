@@ -119,6 +119,55 @@ class Arguments():
         self.log_interval = 30
         self.save_model = False
 
+
+def test_merge(): 
+    #{k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients)) 
+    #                          for k in all_clients[0]  }
+        
+    #self.model.load_state_dict(mean_params) 
+
+    model1 = Model()   
+    #for epoch in range(1,  2):
+    #    model1.worker_train(model1, args,  device, train_loader, epoch)
+    #    model1.worker_test(model1, args, device, test_loader)
+
+
+    model2 = Model()   
+    #for epoch in range(1,  3):
+    #    model2.worker_train(model2, args, device, train_loader, epoch)
+    #    model2.worker_test(model2, args,  device, test_loader)
+
+    all_clients = {}
+    all_clients['c1'] = model1.state_dict()
+    all_clients['c2'] = model2.state_dict()
+
+    print(all_clients)
+    print("++++++   one more line    ++++++")
+    print(all_clients[next(iter(all_clients))])
+    print("++++++   one more line    ++++++")
+
+    for c in all_clients: 
+        print(c)
+    
+    print("++++++   one more line    ++++++")
+    print("++++++   one more line    ++++++")
+    print("++++++   one more line    ++++++")    
+    
+
+    model_all = { k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients))
+                              for k in all_clients[next(iter(all_clients))]  }
+    
+
+    print(model_all)
+    print("++++++   end all lines    ++++++") 
+    model1.load_state_dict(model_all)
+
+    #torch.save(model_all.state_dict(), "mnist_cnn.pt")
+
+    return model1.state_dict() 
+
+
+
 args = Arguments()
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -162,6 +211,8 @@ class LinearTestWorker(ExperimentWorker):
 
 if __name__ == "__main__":
 
+    test_merge()
+    exit() 
 
     # unit test from here 
     # 
@@ -169,8 +220,8 @@ if __name__ == "__main__":
     model = Model()   
 
     for epoch in range(1, args.epochs + 1):
-        model.worker_train(args, model, device, train_loader, epoch)
-        model.worker_test(args, model, device, test_loader)
+        model.worker_train(model, args,  device, train_loader, epoch)
+        model.worker_test(model, args,  device, test_loader)
 
 
     #for epoch in range(1, args.epochs + 1):
