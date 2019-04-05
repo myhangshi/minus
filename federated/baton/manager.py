@@ -62,7 +62,9 @@ class Experiment(object):
 
     async def trigger_end_round(self, request):
         self.end_round()
-        return web.json_response(json_clean(self._update_state))
+        #return web.json_response(json_clean(self._update_state))
+        #TODO RIGHT NOW " FIXME"
+        return web.json_response('OK')
 
     async def start_round(self, n_epoch):
         await self.update_manager.start_update(n_epoch=n_epoch)
@@ -87,6 +89,7 @@ class Experiment(object):
             data=pickle.dumps(data)
         )
 
+        print(" start update result is ", result)
         
         for client_id, response in result:
             if response:
@@ -95,6 +98,8 @@ class Experiment(object):
         if not self.update_manager:
             print("No clients working on round... ending")
             self.end_round()
+        
+        print("end start update result is ", result)
         
         return dict(result)
 
@@ -121,22 +126,35 @@ class Experiment(object):
         return web.json_response("OK")
 
     def end_round(self):
-        if not self.update_manager.in_progress:
-            return
+        #if not self.update_manager.in_progress:
+        #    return
+        
         update_name = self.update_manager.update_name
-        print("Finishing update:", update_name)
+        print("Finishing 1 update:", update_name)
+        
         datas = self.update_manager.end_update()
+        
+        print("Finishing 1 update:", datas)
+        
+
+        # here we do federated averaging for models 
+
         N = sum(d['n_samples'] for d in datas.values())
         if not N:
             print("No responses for update:", update_name)
             return
+
+        # need to figure out a way to calculate averaged sum
+
         for key, value in self.model.state_dict().items():
             weight_sum = (d['state_dict'][key] * d['n_samples']
                           for d in datas.values())
             value[:] = sum(weight_sum) / N
-        for epoch in range(self.update_manager.update_meta['n_epoch']):
-            epoch_loss = sum(d['loss_history'][epoch]*d['n_samples']
-                             for d in datas.values())
-            self.update_manager.loss_history.append(epoch_loss / N)
+        
+        #for epoch in range(self.update_manager.update_meta['n_epoch']):
+        #    epoch_loss = sum(d['loss_history'][epoch]*d['n_samples']
+        #                     for d in datas.values())
+        #    self.update_manager.loss_history.append(epoch_loss / N)
+        
         print("Finished update:", update_name)
-        print("Final Loss:", self.update_manager.loss_history[-1])
+        #print("Final Loss:", self.update_manager.loss_history[-1])

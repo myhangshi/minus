@@ -53,6 +53,7 @@ class UpdateManager(object):
         self.n_updates += 1
         return self.client_responses
 
+
     def client_start(self, client_id):
         #if not self.in_progress:
         #    raise UpdateNotInProgress
