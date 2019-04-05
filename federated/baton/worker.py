@@ -125,6 +125,8 @@ class ExperimentWorker(object):
             'loss_history':  loss_history,
         }
         data = pickle.dumps(state)
+        print("report_update with url  ", url)
+
         async with self._session.post(url, data=data) as resp:
             if resp.status == 200:
                 self.n_updates += 1
@@ -132,6 +134,7 @@ class ExperimentWorker(object):
                 await self.register_with_manager()
             elif resp.status == 410:
                 print("Sent wrong update")
+        print("done with report_update")
 
     def get_data(self):
         raise NotImplementedError

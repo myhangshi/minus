@@ -36,6 +36,7 @@ class ClientManager(object):
     async def notify_clients(self, client_method, http_method='GET',
                              client_callback=None, notify_callback=None,
                              **kwargs):
+
         #await self.cull_clients()
         print("going into notifying the clients") 
 
@@ -45,7 +46,7 @@ class ClientManager(object):
                                  **kwargs)
               for c in self.clients]
         )
-        if notify_callback is not None:
+        if notify_callback:
             return await notify_callback(result)
         return result
 
@@ -68,6 +69,8 @@ class ClientManager(object):
         
         if callback is not None:
             await callback(client_id, result)
+
+
         return client_id, result
 
     def register_handlers(self):

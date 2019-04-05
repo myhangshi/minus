@@ -37,29 +37,30 @@ class UpdateManager(object):
         return len(self.clients) - len(self.client_responses)
 
     def __len__(self):
-        return self.in_progress * len(self.clients)
+        #return self.in_progress * len(self.clients)
+        return len(self.clients)
 
     async def start_update(self, **update_meta):
         print("starting update")
-        if self.in_progress:
-            raise UpdateInProgress
+        #if self.in_progress:
+        #    raise UpdateInProgress
         self._reset_state()
-        await self.lock.acquire()
+        #await self.lock.acquire()
         self.update_meta = update_meta
 
     def end_update(self):
-        self.lock.release()
+        #self.lock.release()
         self.n_updates += 1
         return self.client_responses
 
     def client_start(self, client_id):
-        if not self.in_progress:
-            raise UpdateNotInProgress
+        #if not self.in_progress:
+        #    raise UpdateNotInProgress
         self.clients.add(client_id)
 
     def client_end(self, client_id, response):
-        if not self.in_progress:
-            raise UpdateNotInProgress
+        #if not self.in_progress:
+        #    raise UpdateNotInProgress
         self.client_responses[client_id] = response
         print("Update finished: {} [{}/{}]".format(
             client_id,

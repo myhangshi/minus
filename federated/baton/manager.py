@@ -50,14 +50,9 @@ class Experiment(object):
 
     async def trigger_start_round(self, request):
 
+        n_epoch = 32
         print("get a request trigger start round") 
-        try:
-            n_epoch = int(request.query['n_epoch'])
-        except KeyError:
-            n_epoch = 32
-        except ValueError:
-            return web.json_response({"err": "Invalid Epoch Value"},
-                                     status=400)
+       
         try:
             status = await self.start_round(n_epoch)
         except UpdateException:
@@ -72,16 +67,19 @@ class Experiment(object):
     async def start_round(self, n_epoch):
         await self.update_manager.start_update(n_epoch=n_epoch)
         update_name = self.update_manager.update_name
-        print("Starting update:", update_name)
+        print("Starting update:", update_name, n_epoch)
+
         if not len(self.client_manager):
             print("No clients. Aborting update.")
             return []
+        
         data = {
             'state_dict': self.model.state_dict(),
             'update_name': update_name,
             'n_epoch': n_epoch,
         }
-        print("data is", pickle.dumps(data)) 
+        #print("data is", pickle.dumps(data)) 
+        print("data is stuff inside my start_round") 
 
         result = await self.client_manager.notify_clients(
             'round_start',
@@ -93,27 +91,33 @@ class Experiment(object):
         for client_id, response in result:
             if response:
                 self.update_manager.client_start(client_id)
+
         if not self.update_manager:
             print("No clients working on round... ending")
             self.end_round()
+        
         return dict(result)
 
     async def update(self, request):
+        print("receive an update ")
         client_id = self.client_manager.verify_request(request)
         body = await request.read()
         data = pickle.loads(body)
         update_name = data['update_name']
 
-        if (not self.update_manager.in_progress or
-                update_name != self.update_manager.update_name):
-            return web.json_response({'error': "Wrong Update"}, status=410)
+        #if (not self.update_manager.in_progress or
+        #        update_name != self.update_manager.update_name):
+        #    return web.json_response({'error': "Wrong Update"}, status=410)
 
         self.update_manager.client_end(client_id, data)
         self.client_manager[client_id]['last_update'] = update_name
         self.client_manager[client_id]['num_updates'] += 1
+        print("about to end update in manager ")
 
         if not self.update_manager.clients_left:
             self.end_round()
+        print("report update to end update in manager ")
+
         return web.json_response("OK")
 
     def end_round(self):
