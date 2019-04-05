@@ -44,13 +44,36 @@ class Experiment(object):
             '/{}/loss_history'.format(self.name),
             self.get_loss_history,
         )
+        self.app.router.add_get(
+            '/{}/get_client_updates'.format(self.name),
+            self.get_client_updates,
+        )
+
+    async def get_client_updates(self, request):
+        print("inside get_client_updates ")
+
+'''
+        self.update_manager.client_end(client_id, data)
+        self.client_manager[client_id]['last_update'] = update_name
+        self.client_manager[client_id]['num_updates'] += 1
+        self.client_manager[client_id]['state_dict'] = data['state_dict']
+
+        self.clients = {}
+
+        for c in self.clients
+'''        
+
+
+
+        return web.json_response("OK")
 
     async def get_loss_history(self, request):
         return web.json_response(self._update_loss_history)
 
     async def trigger_start_round(self, request):
 
-        n_epoch = 32
+        #n_epoch = 32
+        n_epoch = 1
         print("get a request trigger start round") 
        
         try:
@@ -107,7 +130,7 @@ class Experiment(object):
         
         client_id = self.client_manager.verify_request(request)
         print("receive an update from ", client_id)
-        
+
         body = await request.read()
         data = pickle.loads(body)
 
@@ -144,7 +167,8 @@ class Experiment(object):
         
 
         # here we do federated averaging for models 
-
+        # we do average computation here 
+        # save the model in the manager and notify the clients 
         N = sum(d['n_samples'] for d in datas.values())
         if not N:
             print("No responses for update:", update_name)

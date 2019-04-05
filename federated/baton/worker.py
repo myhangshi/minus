@@ -11,7 +11,8 @@ from utils import ensure_no_collision
 
 class ExperimentWorker(object):
     def __init__(self, app, model, manager, name=None, port=8080,
-                 heartbeat_time=60, worker_host=None):
+                 heartbeat_time=60, worker_host=None, train_loader=None, 
+                 args=None):
         self.name = name or getattr(model, 'name', hash(model))
 
         self.model = model
@@ -33,7 +34,9 @@ class ExperimentWorker(object):
         self.heartbeat_time = heartbeat_time
         self._heartbeat_manager = None
         self._heartbeat_lock = asyncio.Lock()
-        
+
+        self.train_loader = train_loader
+        self.args = args
         #now registering with the manager 
         asyncio.ensure_future(self.register_with_manager())
 
@@ -107,13 +110,19 @@ class ExperimentWorker(object):
         self.last_update = update_name = data['update_name']
         self.model.load_state_dict(data['state_dict'])
         n_epoch = data['n_epoch']
+
+
         asyncio.ensure_future(self._run_round(update_name, n_epoch))
         return web.json_response("OK")
 
     async def _run_round(self, update_name, n_epoch):
-        data, n_samples = self.get_data()
-        loss_history = self.model.train(*data, n_epoch=n_epoch)
-        await self.report_update(update_name, n_samples, loss_history)
+        #data, n_samples = self.get_data()
+        
+        loss_history = self.model.worker_train(self.model, 
+            train_loader=self.train_loader, args=self.args, epoch=n_epoch, 
+            client_id=self.client_id)
+
+        await self.report_update(update_name, 3200, loss_history)
 
     async def report_update(self, update_name, n_samples, loss_history):
         url = urljoin(self.manager_url, 'update')

@@ -118,6 +118,7 @@ class ClientManager(object):
             "url": url,
             "last_update": None,
             "num_updates": 0,
+            "state_dict":{}
         }
         print("Registered client:", client_id, client['url'], client['port'])
         return web.json_response(state)
