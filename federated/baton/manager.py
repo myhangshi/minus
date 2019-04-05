@@ -52,16 +52,7 @@ class Experiment(object):
     async def get_client_updates(self, request):
         print("inside get_client_updates ")
 
-        '''
-        self.update_manager.client_end(client_id, data)
-        self.client_manager[client_id]['last_update'] = update_name
-        self.client_manager[client_id]['num_updates'] += 1
-        self.client_manager[client_id]['state_dict'] = data['state_dict']
-
-        self.clients = {}
-
-        for c in self.clients
-        '''        
+        
         all_clients = self.client_manager.clients
         '''
         for c in all_clients: 
@@ -73,12 +64,13 @@ class Experiment(object):
             all_clients[c]['stat_dict'] = params     
         '''
 
-        mean_params = {k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients)) 
-                              for k in all_clients[0]  }
-        #for k in mean_params:
-        #    mean_params[k] = mean_params[k].tolist()
+        model_all = { k: (sum(all_clients[c]['state_dict'][k] for c in all_clients) / len(all_clients))
+                              for k in all_clients[next(iter(all_clients))]['state_dict']  }
         
-        self.model.load_state_dict(mean_params) 
+        self.model.load_state_dict(model_all) 
+
+        print("done with the merge of model parameters from all clients ")
+
 
         return web.json_response("OK")    
 
@@ -119,6 +111,7 @@ class Experiment(object):
             'update_name': update_name,
             'n_epoch': n_epoch,
         }
+        
         #print("data is", pickle.dumps(data)) 
         print("data is stuff inside my start_round") 
 
@@ -171,8 +164,8 @@ class Experiment(object):
         return web.json_response("OK")
 
     def end_round(self):
-        #if not self.update_manager.in_progress:
-        #    return
+        if not self.update_manager.in_progress:
+            return
         
         update_name = self.update_manager.update_name
         #print("Finishing 1 update:", update_name)
@@ -180,7 +173,6 @@ class Experiment(object):
         datas = self.update_manager.end_update()
         
         print("Finishing 1 update:", datas)
-        
 
         # here we do federated averaging for models 
         # we do average computation here 

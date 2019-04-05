@@ -1,7 +1,21 @@
-python mnist_demo.py manager localhost 6666
+1) start server: 
+   python mnist_demo.py manager localhost 6666
 
-
+2) start multiple clients: 
+for each client, run below command 
+(the port number should be different for each host)  
 python mnist_demo.py worker localhost 6667 
 
+3) run the model training and aggregation 
+* run via command line 
+3.1 start training on each client 
+curl  http://127.0.0.1:6666/linear/start_round
+3.2 aggregate the model updates 
+curl  http://127.0.0.1:6666/linear/get_client_updates
 
+* run via scripts 
+see codes in <model_name>_runner.py 
+
+
+ 
 

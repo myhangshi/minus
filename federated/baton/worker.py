@@ -12,7 +12,7 @@ from utils import ensure_no_collision
 class ExperimentWorker(object):
     def __init__(self, app, model, manager, name=None, port=8080,
                  heartbeat_time=60, worker_host=None, train_loader=None, 
-                 args=None):
+                 test_loader=None, args=None):
         self.name = name or getattr(model, 'name', hash(model))
 
         self.model = model
@@ -36,6 +36,7 @@ class ExperimentWorker(object):
         self._heartbeat_lock = asyncio.Lock()
 
         self.train_loader = train_loader
+        self.test_loader = test_loader
         self.args = args
         #now registering with the manager 
         asyncio.ensure_future(self.register_with_manager())
@@ -97,9 +98,10 @@ class ExperimentWorker(object):
         )
 
     async def round_start(self, request):
-        if self.update_in_progress:
-            return web.json_response({"err": "Update in Progress"},
-                                     status=409)
+        #if self.update_in_progress:
+        #    return web.json_response({"err": "Update in Progress"},
+        #                             status=409)
+        print("worker getting round_start message from server")
         body = await request.read()
 
         data = pickle.loads(body)
@@ -107,21 +109,31 @@ class ExperimentWorker(object):
                 request.query['key'] != self.key):
             asyncio.ensure_future(self.register_with_manager())
             return web.json_response({"err": "Wrong Client"}, status=404)
+
+
         self.last_update = update_name = data['update_name']
         self.model.load_state_dict(data['state_dict'])
         n_epoch = data['n_epoch']
-
 
         asyncio.ensure_future(self._run_round(update_name, n_epoch))
         return web.json_response("OK")
 
     async def _run_round(self, update_name, n_epoch):
         #data, n_samples = self.get_data()
-        
+        if self.test_loader: 
+            self.model.worker_test(self.model, args=self.args, 
+                                   test_loader=self.test_loader,  epoch=n_epoch, 
+                                   client_id=self.client_id)
+
         loss_history = self.model.worker_train(self.model, 
             train_loader=self.train_loader, args=self.args, epoch=n_epoch, 
-            client_id=self.client_id)
+            client_id=self.client_id)     
 
+        if self.test_loader: 
+            self.model.worker_test(self.model, args=self.args, 
+                                   test_loader=self.test_loader,  epoch=n_epoch, 
+                                   client_id=self.client_id)
+        
         await self.report_update(update_name, 3200, loss_history)
 
     async def report_update(self, update_name, n_samples, loss_history):

@@ -45,8 +45,8 @@ class Model(nn.Module):
         return hash(tuple((k, *v.shape) for k, v in self.state_dict().items()))
 
     #decide whether a data item with idx should be included 
-    def data_included(self, client_id, idx): 
-        return client % 7 == idx % 7 
+    def data_not_included(self, client_id, idx): 
+        return (int(client_id[-3:]) % 2) == (idx % 2) 
 
     def worker_train(self, model=None, args=None, device='cpu', train_loader=None, 
                     epoch=1, client_id='worker'):
@@ -66,8 +66,8 @@ class Model(nn.Module):
         # for each epoch we reort a loss instead 
         for batch_idx, (data, target) in enumerate(train_loader):
             
-            #if data_included(batch_idx, client_id): 
-            #    continue 
+            if self.data_not_included(client_id, batch_idx): 
+                continue 
 
             optimizer.zero_grad()
             output = model(data)
@@ -80,12 +80,17 @@ class Model(nn.Module):
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(data), len(train_loader.dataset),
                     100. * batch_idx / len(train_loader), loss.item()))
+        
         loss_history.append(loss.item())
         
         return loss_history 
 
 
-    def worker_test(self, model, args, device, test_loader):
+    def worker_test(self, model=None, args=None, device='cpu', test_loader=None, 
+                    epoch=1, client_id='worker'):
+        if model is None: 
+            return 
+
         model.eval()
         test_loss = 0
         correct = 0
@@ -127,15 +132,15 @@ def test_merge():
     #self.model.load_state_dict(mean_params) 
 
     model1 = Model()   
-    #for epoch in range(1,  2):
-    #    model1.worker_train(model1, args,  device, train_loader, epoch)
-    #    model1.worker_test(model1, args, device, test_loader)
+    for epoch in range(1,  2):
+        model1.worker_train(model1, args,  device, train_loader, epoch)
+        model1.worker_test(model1, args, device, test_loader)
 
 
     model2 = Model()   
-    #for epoch in range(1,  3):
-    #    model2.worker_train(model2, args, device, train_loader, epoch)
-    #    model2.worker_test(model2, args,  device, test_loader)
+    for epoch in range(1,  3):
+        model2.worker_train(model2, args, device, train_loader, epoch)
+        model2.worker_test(model2, args,  device, test_loader)
 
     all_clients = {}
     all_clients['c1'] = model1.state_dict()
@@ -210,13 +215,14 @@ class LinearTestWorker(ExperimentWorker):
 
 
 if __name__ == "__main__":
-
-    test_merge()
-    exit() 
-
     # unit test from here 
     # 
     '''
+    #unit test 1 
+    test_merge()
+    exit() 
+
+    #unit test 2 
     model = Model()   
 
     for epoch in range(1, args.epochs + 1):
@@ -256,7 +262,7 @@ if __name__ == "__main__":
         print('get into worker')
         model = Model()
         worker = LinearTestWorker(app, model, host, port=port, 
-            name='linear', train_loader=train_loader, 
+            name='linear', train_loader=train_loader, test_loader=test_loader, 
             args=args)
         web.run_app(app, port=port)
     
