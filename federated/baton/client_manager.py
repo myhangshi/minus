@@ -22,6 +22,7 @@ class ClientManager(object):
         self.register_handlers()
         self._stale_manager = PeriodicTask(self.cull_clients,
                                            client_ttl//2).start()
+        self.client_count = 100 
 
     def __len__(self):
         return len(self.clients)
@@ -37,6 +38,7 @@ class ClientManager(object):
                              **kwargs):
         #await self.cull_clients()
         print("going into notifying the clients") 
+
         result = await asyncio.gather(
             *[self.notify_client(c, client_method, http_method=http_method,
                                  callback=client_callback,
@@ -51,6 +53,7 @@ class ClientManager(object):
                             callback=None, **kwargs):
         url = urljoin(self.clients[client_id]['url'], client_method)
         url += "?client_id={}&key={}".format(client_id, self.clients[client_id]['key'])  # TODO: fix this
+        
         print("inside single notify client ", url) 
 
         result = False
@@ -62,6 +65,7 @@ class ClientManager(object):
                     self.clients.pop(client_id)
         except aiohttp.client_exceptions.ClientConnectorError:
             self.clients.pop(client_id)
+        
         if callback is not None:
             await callback(client_id, result)
         return client_id, result
@@ -89,7 +93,9 @@ class ClientManager(object):
     async def register(self, request):
         data = await request.json()
         remote = request.remote
-        client_id = "client_{}_{}".format(self.name, random_key(6))
+        client_id = "client_{}_{}".format(self.name, self.client_count)
+        self.client_count += 1 
+        
         key = random_key()
         state = {
             'client_id': client_id,
@@ -138,6 +144,7 @@ class ClientManager(object):
         for stale_client in stale_clients:
             print("Removing stale client:", stale_client)
             self.clients.pop(stale_client)
+            self.client_count -= 1
 
     async def get_clients(self, request):
         data = [json_clean(client)

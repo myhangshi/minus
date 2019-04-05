@@ -88,6 +88,8 @@ class Experiment(object):
             http_method='POST',
             data=pickle.dumps(data)
         )
+
+        
         for client_id, response in result:
             if response:
                 self.update_manager.client_start(client_id)

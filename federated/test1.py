@@ -1,13 +1,40 @@
-import syft as sy
 import copy
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms
 import torch.nn.functional as F
 from torch.autograd import Variable
+from syft import optim
+
+
+
 
 import argparse
+import syft as sy
 
+
+train_dataset  = datasets.MNIST('../data', train=True, download=True,
+                   transform=transforms.Compose([
+                       transforms.ToTensor(),
+                       transforms.Normalize((0.1307,), (0.3081,))
+                   ]))
+
+
+test_dataset  = datasets.MNIST('../data', train=False, download=True,
+                   transform=transforms.Compose([
+                       transforms.ToTensor(),
+                       transforms.Normalize((0.1307,), (0.3081,))
+                   ]))
+
+
+print("training data len and target len ", len(train_dataset.train_data),  
+                                            len(train_dataset.train_labels))
+
+print("test data len and target len ", len(test_dataset.test_data),  
+                                       len(test_dataset.test_labels))
+
+
+ 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -48,6 +75,70 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
+
+
+
+
+#self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
+
+
+#train_loader = torch.utils.data.DataLoader(
+#    datasets.MNIST('../data', train=True, download=True,
+#                   transform=transforms.Compose([
+#                       transforms.ToTensor(),
+#                       transforms.Normalize((0.1307,), (0.3081,))
+#                   ])),
+#    batch_size=args.batch_size, shuffle=True, **kwargs)
+
+
+
+#train_loader = torch.utils.data.DataLoader(
+#    datasets.MNIST('../data', train=True, download=True,
+#                   transform=transforms.Compose([
+#                       transforms.ToTensor(),
+#                       transforms.Normalize((0.1307,), (0.3081,))
+#                   ])),
+#    batch_size=args.batch_size, shuffle=True, **kwargs)
+
+#test_loader = torch.utils.data.DataLoader(
+#    datasets.MNIST('../data', train=False, transform=transforms.Compose([
+#                       transforms.ToTensor(),
+#                       transforms.Normalize((0.1307,), (0.3081,))
+#                   ])),
+#    batch_size=args.test_batch_size, shuffle=True, **kwargs)
+
+#print("len is ", len(train_loader)) 
+#print("len is ", len(test_loader)) 
+
+# create a couple workers
+
+#bob = sy.VirtualWorker(id="bob", hook=hook)
+#alice = sy.VirtualWorker(id="alice",hook=hook)
+#secure_worker = sy.VirtualWorker(id="secure_worker",hook=hook)
+
+
+hook = sy.TorchHook(torch)
+me = hook.local_worker
+me.is_client_worker = False
+
+
+bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
+#alice = sy.VirtualWorker(id="alice",hook=hook, is_client_worker=False)
+
+
+me.add_worker(bob)
+
+
+
+#me.add_worker(alice)
+
+#bobs_model = model.copy().send(bob)
+#alices_model = model.copy().send(alice)
+
+#bob.add_workers([alice, secure_worker])
+#alice.add_workers([bob, secure_worker])
+#secure_worker.add_workers([alice, bob])
+
 model = Net()
 bobs_model = Net()
 
@@ -62,87 +153,60 @@ print("pytorch_total_params ", pytorch_total_params)
 #kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 kwargs = {}
 
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=True, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])),
-    batch_size=args.batch_size, shuffle=True, **kwargs)
-test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])),
-    batch_size=args.test_batch_size, shuffle=True, **kwargs)
-
-dataset_train = datasets.MNIST('../data/', train=True, download=True,
-                       transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                ]))
-
-# create a couple workers
-
-hook = sy.TorchHook()
-me = hook.local_worker
-me.is_client_worker = False
-
-#bob = sy.VirtualWorker(id="bob", hook=hook)
-#alice = sy.VirtualWorker(id="alice",hook=hook)
-#secure_worker = sy.VirtualWorker(id="secure_worker",hook=hook)
-
-
-bob = sy.VirtualWorker(id="bob",hook=hook, is_client_worker=False)
-#alice = sy.VirtualWorker(id="alice",hook=hook, is_client_worker=False)
-
-
-me.add_worker(bob)
-#me.add_worker(alice)
-
-#bobs_model = model.copy().send(bob)
-#alices_model = model.copy().send(alice)
-
-
-
-#bob.add_workers([alice, secure_worker])
-#alice.add_workers([bob, secure_worker])
-#secure_worker.add_workers([alice, bob])
 
 train_distributed_dataset  = []
-for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx > 4: break
-    data = sy.Var(data)
-    target = sy.Var(target.long())
 
 
-    #data = Variable(data)
-    #target = Variable(target)
+
+for batch_idx, (data,target) in enumerate(train_dataset):
+    #print("data set ", batch_idx, data, target)
+    if batch_idx % 200 == 199: 
+        print("data set ", batch_idx,  target)
+    #data = torch.Tensor(data)
+    #target = torch.Tensor(target
+
+    if batch_idx == 800: 
+        break 
+
+    #data = torch.Tensor(data)
+    #target = torch.Tensor(target)
 
     data.send(bob)
     target.send(bob)
     train_distributed_dataset.append((data, target))
 
+print("the length is ", len(train_distributed_dataset))
 
 
+#exit 
 
 
 bobs_model = bobs_model.send(bob)
+#bobs_opt.send(bob)
 
 #for p in bobs_model.parameters():
-    #print(p.get().shape, p.id, p.id_at_location)
+#	print(p.get().shape, p.id, p.id_at_location)
 #    print(p.get().shape, p.id)
 
 #for i in range(10):
-for batch_idx, (data,target) in enumerate(train_distributed_dataset):
+for data,target in train_distributed_dataset:
 
-    print(data)
-    #bobs_model.send(data.location)
+    #print(data)
+   
     # Train Bob's Model
-    bobs_opt.zero_grad() # this is where it breaks.........
+    bobs_opt.zero_grad() 
+
+
     bobs_pred = bobs_model(data)
     bobs_loss = F.nll_loss(bobs_pred, target)
-    bobs_loss.backward()
-
-    bobs_opt.step()
+   
     bobs_loss = bobs_loss.get().data[0]
+    bobs_loss.backward()
+    bobs_opt.step()
+   
+
+    if batch_idx % 100 == 0:
+        print("the loss now is %f ", bobs_loss)
+
+
+

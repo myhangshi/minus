@@ -13,15 +13,18 @@ class ExperimentWorker(object):
     def __init__(self, app, model, manager, name=None, port=8080,
                  heartbeat_time=60, worker_host=None):
         self.name = name or getattr(model, 'name', hash(model))
+
         self.model = model
         self.app = app
         self.port = port
         self.worker_host = worker_host
         self.manager = manager
-        self.manager_url = "http://{}:{}/{}/".format(manager, self.port, self.name)
+        self.manager_url = "http://{}:6666/{}/".format(manager,  self.name)
         #self.manager_url = "http://{}/{}/".format(manager, self.name)
+
         self.__session = None
         self.register_handlers()
+        
         self.n_updates = 0
         self.update_in_progress = False
         self.last_update = None
@@ -30,6 +33,8 @@ class ExperimentWorker(object):
         self.heartbeat_time = heartbeat_time
         self._heartbeat_manager = None
         self._heartbeat_lock = asyncio.Lock()
+        
+        #now registering with the manager 
         asyncio.ensure_future(self.register_with_manager())
 
     @property
@@ -43,13 +48,16 @@ class ExperimentWorker(object):
         url = urljoin(self.manager_url, 'register')
         data = {'url': self.worker_host, 'port': self.port}
         print("registering with:", url)
+        
         async with self._session.get(url, json=data) as resp:
             response = await resp.json()
             self.client_id = response['client_id']
             self.key = response['key']
             print("I am now:", self.client_id)
+
             if self._heartbeat_manager is not None:
                 await self._heartbeat_manager.stop()
+
             self._heartbeat_manager = PeriodicTask(
                 self.heartbeat,
                 self.heartbeat_time,
@@ -90,6 +98,7 @@ class ExperimentWorker(object):
             return web.json_response({"err": "Update in Progress"},
                                      status=409)
         body = await request.read()
+
         data = pickle.loads(body)
         if (request.query['client_id'] != self.client_id or
                 request.query['key'] != self.key):

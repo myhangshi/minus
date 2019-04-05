@@ -105,11 +105,11 @@ secure_worker.add_workers([alice, bob])
 
 train_distributed_dataset  = []
 
-print(bob._objects)
+#print(bob._objects)
 
 
 for batch_idx, (data,target) in enumerate(train_loader):
-    if batch_idx > 1000: break
+    #if batch_idx > 1000: break
     #data = sy.Var(data)
     #target = sy.Var(target.long())
     data = Variable(data)
@@ -117,6 +117,7 @@ for batch_idx, (data,target) in enumerate(train_loader):
     data.send(bob)
     target.send(bob)
     train_distributed_dataset.append((data, target))
+print("the length is ", len(train_distributed_dataset)) 
 
 #bobs_model = model.copy().send(bob)
 
@@ -132,10 +133,10 @@ bobs_model = model.send(bob)
 
 #bobs_model = bobs_model.send(bob)
 
-#for i in range(10):
-for batch_idx, (data,target) in enumerate(train_distributed_dataset):
+for i in range(100):
+  for batch_idx, (data,target) in enumerate(train_distributed_dataset):
 
-    print(data)
+    #print(data)
     #bobs_model.send(data.location)
     # Train Bob's Model
     bobs_opt.zero_grad() # this is where it breaks.........
@@ -145,3 +146,6 @@ for batch_idx, (data,target) in enumerate(train_distributed_dataset):
 
     bobs_opt.step()
     bobs_loss = bobs_loss.get().data[0]
+    if batch_idx % 1000 == 0: 
+        print("the loss now is %f ", bobs_loss) 
+
