@@ -21,7 +21,7 @@ from worker import ExperimentWorker
 
 
 class Model(nn.Module):
-    name = "lineartest"
+    name = "mnist"
 
 
     def __init__(self):
@@ -115,15 +115,15 @@ class Model(nn.Module):
 
 class Arguments():
     def __init__(self):
-        #self.batch_size = 64
-        self.batch_size = 32
+        self.batch_size = 64
+        #self.batch_size = 32
         self.test_batch_size = 1000
         self.epochs = 10
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
         self.seed = 1
-        self.log_interval = 100
+        self.log_interval = 400
         self.save_model = False
 
 
@@ -207,7 +207,7 @@ test_loader = torch.utils.data.DataLoader(
 
 class LinearTestWorker(ExperimentWorker):
     def get_data(self):
-        print("read data for linearTestWorker ")
+        print("read data for MnistTestWorker ")
         n = random.randint(5, 20)
         p = torch.Tensor((11, 5, 3, 2, 5, 6, 2, 7, 8, 1))
         X = torch.randn(32*n, 10)
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         #app = web.Application()
         manager = Manager(app)
         model = Model()
-        manager.register_experiment(model, name='linear')
+        manager.register_experiment(model, name='mnist')
         web.run_app(app, port=port)
 
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         print('get into worker')
         model = Model()
         worker = LinearTestWorker(app, model, host, port=port, 
-            name='linear', train_loader=train_loader, test_loader=test_loader, 
+            name='mnist', train_loader=train_loader, test_loader=test_loader, 
             args=args)
         web.run_app(app, port=port)
     

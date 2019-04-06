@@ -8,14 +8,15 @@ async def fetch(session, url):
             return await response.text()
  
 async def main(loop):
-    
+     
     async with aiohttp.ClientSession(loop=loop) as session:
-        print("issue get client update request") 
-        html = await fetch(session, 'http://127.0.0.1:6666/linear/get_client_updates')
-        print(html)
-        print("issue get start_round request") 
-        html = await fetch(session, 'http://127.0.0.1:6666/linear/start_round')
-        print(html)
+        for _ in range(1, 10): 
+            print("issue get client update request") 
+            html = await fetch(session, 'http://127.0.0.1:6666/mnist/get_client_updates')
+            print(html)
+            print("issue get start_round request") 
+            html = await fetch(session, 'http://127.0.0.1:6666/mnist/start_round')
+            print(html)
  
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main(loop))
