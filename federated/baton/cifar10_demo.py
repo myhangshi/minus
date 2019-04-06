@@ -12,7 +12,6 @@ import random
 import time 
 
 
-
 from aiohttp import web
 
 from utils import EpochProgress
@@ -21,25 +20,26 @@ from worker import ExperimentWorker
 
 
 class Model(nn.Module):
-    name = "lineartest"
-
+    name = "cifar10"
 
     def __init__(self):
         super(Model, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 10)
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(-1, 320)
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
         x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
         return F.log_softmax(x, dim=1)
+
 
     def __hash__(self):
         return hash(tuple((k, *v.shape) for k, v in self.state_dict().items()))
@@ -50,7 +50,7 @@ class Model(nn.Module):
         #return ((int(client_id[-3:]) % 2)) == (int(target[0]) % 2) 
 
     def worker_train(self, model=None, args=None, device='cpu', train_loader=None, 
-                    epoch=1, client_id='worker'):
+                    epoch=1, client_id='worker100'):
 
         if model is None: 
             return 
@@ -99,11 +99,9 @@ class Model(nn.Module):
             for data, target in test_loader:
                 #data, target = data.to(device), target.to(device)
                 output = model(data)
-                #test_loss += F.nll_loss(output, target, reduction='sum').item() # sum up batch loss
-                test_loss += F.nll_loss(output, target).item() # sum up batch loss
-                #print("test_loss ", test_loss)
-                #exit()
-                pred = output.max(1, keepdim=True)[1] # get the index of the max log-probability
+                
+                test_loss += F.nll_loss(output, target, reduction='sum').item() # sum up batch loss
+                pred = output.argmax(1, keepdim=True) # get the index of the max log-probability 
                 correct += pred.eq(target.view_as(pred)).sum().item()
 
             test_loss /= len(test_loader.dataset)
@@ -115,63 +113,15 @@ class Model(nn.Module):
 
 class Arguments():
     def __init__(self):
-        #self.batch_size = 64
-        self.batch_size = 32
+        self.batch_size = 64
         self.test_batch_size = 1000
         self.epochs = 10
         self.lr = 0.01
         self.momentum = 0.5
-        self.no_cuda = False
+        self.no_cuda = True
         self.seed = 1
-        self.log_interval = 100
+        self.log_interval = 200
         self.save_model = False
-
-
-def test_merge(): 
-    #{k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients)) 
-    #                          for k in all_clients[0]  }
-        
-    #self.model.load_state_dict(mean_params) 
-
-    model1 = Model()   
-    for epoch in range(1,  2):
-        model1.worker_train(model1, args,  device, train_loader, epoch)
-        model1.worker_test(model1, args, device, test_loader)
-
-
-    model2 = Model()   
-    for epoch in range(1,  3):
-        model2.worker_train(model2, args, device, train_loader, epoch)
-        model2.worker_test(model2, args,  device, test_loader)
-
-    all_clients = {}
-    all_clients['c1'] = model1.state_dict()
-    all_clients['c2'] = model2.state_dict()
-
-    print(all_clients)
-    print("++++++   one more line    ++++++")
-    print(all_clients[next(iter(all_clients))])
-    print("++++++   one more line    ++++++")
-
-    for c in all_clients: 
-        print(c)
-    
-    print("++++++   one more line    ++++++")
-    print("++++++   one more line    ++++++")
-    print("++++++   one more line    ++++++")    
-    
-
-    model_all = { k: (sum(all_clients[c][k] for c in all_clients) / len(all_clients))
-                              for k in all_clients[next(iter(all_clients))]  }
-    
-
-    print(model_all)
-    print("++++++   end all lines    ++++++") 
-    model1.load_state_dict(model_all)
-
-    #torch.save(model_all.state_dict(), "mnist_cnn.pt")
-
-    return model1.state_dict() 
 
 
 
@@ -203,6 +153,20 @@ test_loader = torch.utils.data.DataLoader(
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
 
+train_loader = torch.utils.data.DataLoader(
+    datasets.CIFAR10('./data', train=True, download=True,
+                   transform=transforms.Compose([
+                       transforms.ToTensor(),
+                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                   ])),   
+    batch_size=args.batch_size, shuffle=True, **kwargs)
+
+test_loader = torch.utils.data.DataLoader(
+    datasets.CIFAR10('./data', train=False, transform=transforms.Compose([
+                       transforms.ToTensor(),
+                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                   ])),
+    batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
 
 class LinearTestWorker(ExperimentWorker):
@@ -220,11 +184,8 @@ if __name__ == "__main__":
     # unit test from here 
     # 
     '''
-    #unit test 1 
-    test_merge()
-    exit() 
 
-    #unit test 2 
+    #unit test 1
     model = Model()   
 
     for epoch in range(1, args.epochs + 1):
@@ -232,12 +193,8 @@ if __name__ == "__main__":
         model.worker_test(model, args,  device, test_loader)
 
 
-    #for epoch in range(1, args.epochs + 1):
-    #    train(model, args,  device, train_loader, optimizer, epoch)
-    #    test(model, args,  device, test_loader)
-
     if (args.save_model):
-        torch.save(model.state_dict(), "mnist_cnn.pt")
+        torch.save(model.state_dict(), "cifar10_cnn.pt")
 
 
     exit() 
@@ -256,7 +213,7 @@ if __name__ == "__main__":
         #app = web.Application()
         manager = Manager(app)
         model = Model()
-        manager.register_experiment(model, name='linear')
+        manager.register_experiment(model, name='cifar10')
         web.run_app(app, port=port)
 
 
@@ -264,7 +221,7 @@ if __name__ == "__main__":
         print('get into worker')
         model = Model()
         worker = LinearTestWorker(app, model, host, port=port, 
-            name='linear', train_loader=train_loader, test_loader=test_loader, 
+            name='cifar10', train_loader=train_loader, test_loader=test_loader, 
             args=args)
         web.run_app(app, port=port)
     
