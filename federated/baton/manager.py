@@ -54,6 +54,8 @@ class Experiment(object):
 
         
         all_clients = self.client_manager.clients
+
+
         '''
         for c in all_clients: 
             print("######### LOOP ONE MORE TIME  ##########")
@@ -64,13 +66,14 @@ class Experiment(object):
             all_clients[c]['stat_dict'] = params     
         '''
 
-        model_all = { k: (sum(all_clients[c]['state_dict'][k] for c in all_clients) / len(all_clients))
+        if len(all_clients) > 0: 
+            model_all = { k: (sum(all_clients[c]['state_dict'][k] for c in all_clients) / len(all_clients))
                               for k in all_clients[next(iter(all_clients))]['state_dict']  }
-        
-        self.model.load_state_dict(model_all) 
-
-        print("done with the merge of model parameters from all clients ")
-
+            if model_all: 
+                self.model.load_state_dict(model_all) 
+                print("done with the merge of model parameters from all clients ")
+            else:
+                print("done with no merge of model parameters from all clients ")
 
         return web.json_response("OK")    
 
@@ -143,7 +146,7 @@ class Experiment(object):
         body = await request.read()
         data = pickle.loads(body)
 
-        print("the data from update client_id is ", data)
+        #print("the data from update client_id is ", data)
         update_name = data['update_name']
 
         #if (not self.update_manager.in_progress or

@@ -46,8 +46,8 @@ class Model(nn.Module):
 
     #decide whether a data item with idx should be included 
     def data_not_included(self, client_id, idx, target): 
-        #return (int(client_id[-3:]) % 2) == (idx % 2) 
-        return ((int(client_id[-3:]) % 2)) == (int(target[0]) % 2) 
+        return (int(client_id[-3:]) % 2) == (idx % 2) 
+        #return ((int(client_id[-3:]) % 2)) == (int(target[0]) % 2) 
 
     def worker_train(self, model=None, args=None, device='cpu', train_loader=None, 
                     epoch=1, client_id='worker'):
@@ -77,7 +77,7 @@ class Model(nn.Module):
             loss.backward()
             optimizer.step()
         
-            if batch_idx % args.log_interval == 0 or batch_idx % args.log_interval == 1:
+            if batch_idx % args.log_interval == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(data), len(train_loader.dataset),
                     100. * batch_idx / len(train_loader), loss.item()))
@@ -115,14 +115,15 @@ class Model(nn.Module):
 
 class Arguments():
     def __init__(self):
-        self.batch_size = 64
+        #self.batch_size = 64
+        self.batch_size = 32
         self.test_batch_size = 1000
         self.epochs = 10
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = False
         self.seed = 1
-        self.log_interval = 30
+        self.log_interval = 2000
         self.save_model = False
 
 
