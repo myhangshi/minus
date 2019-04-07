@@ -1,3 +1,5 @@
+section 1: How to run the application? 
+
 1) start server: 
    python mnist_demo.py manager localhost 6666
 
@@ -15,6 +17,43 @@ curl  http://127.0.0.1:6666/linear/get_client_updates
 
 * run via scripts 
 see codes in <model_name>_runner.py 
+
+section 2: file structure 
+
+server files: 
+   manager.py 
+   update_manager.py 
+   client_manager.py 
+   
+worker files: 
+   worker.py 
+
+application files: 
+(used in both worker and manager, driven by different datasets) 
+   demo.py 
+   mnist_demo.py 
+   cifar10_demo.py 
+
+support files: 
+   utils.py 
+
+test harness files: 
+   runner_mnist.py 
+   runner_cifar10.py 
+
+
+section 3 requirements 
+torch 
+torchvision 
+aiohttp 
+aiosync 
+pickle 
+
+
+section 4 environments 
+python 3.x (tested on Python 3.7) 
+ubuntu 16.04 
+local or distributed/multiple hosts 
 
 
  
