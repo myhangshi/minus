@@ -6,8 +6,6 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 import time 
 
-import syft as sy  # <-- NEW: import the Pysyft library
-
 class Arguments():
     def __init__(self):
         self.batch_size = 64
@@ -32,32 +30,24 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-hook = sy.TorchHook(torch)  # <-- NEW: hook PyTorch ie add extra functionalities to support Federated Learning
-bob = sy.VirtualWorker(hook, id="bob")  # <-- NEW: define remote worker bob
-alice = sy.VirtualWorker(hook, id="alice")  # <-- NEW: and alice
-
 def load_data():
     
     '''<--Load CIFAR dataset from torch vision module distribute to workers using PySyft's Federated Data loader'''
-    
-
-    federated_train_loader = sy.FederatedDataLoader( # <-- this is now a FederatedDataLoader 
-    datasets.CIFAR10('../data', train=True, download=True,
+    train_loader = torch.utils.data.DataLoader(
+      datasets.CIFAR10('./data', train=True, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                   ]))
-    .federate((bob, alice)), # <-- NEW: we distribute the dataset across all the workers, it's now a FederatedDataset
+                   ])),
     batch_size=args.batch_size, shuffle=True, **kwargs)
 
     test_loader = torch.utils.data.DataLoader(
-    datasets.CIFAR10('../data', train=False, transform=transforms.Compose([
+    datasets.CIFAR10('./data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                    ])),
     batch_size=args.test_batch_size, shuffle=True, **kwargs)
-    
-    return federated_train_loader,test_loader
+    return train_loader,test_loader
 
 
 class Net(nn.Module):
@@ -81,17 +71,15 @@ class Net(nn.Module):
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
-    for batch_idx, (data, target) in enumerate(federated_train_loader): # <-- now it is a distributed dataset
-        model.send(data.location) # <-- NEW: send the model to the right location
+    for batch_idx, (data, target) in enumerate(train_loader): # <-- now it is a distributed dataset
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        model.get() # <-- NEW: get the model back
         if batch_idx % args.log_interval == 0:
-            loss = loss.get() # <-- NEW: get the loss back
+            #loss = loss.get() # <-- NEW: get the loss back
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * args.batch_size, len(train_loader) * args.batch_size, #batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
@@ -119,7 +107,7 @@ def test(args, model, device, test_loader):
 
 
 #<--Load federated training data and test data
-federated_train_loader,test_loader=load_data()
+train_loader,test_loader=load_data()
 
 #<--Create Neural Network model instance
 model = Net().to(device)
@@ -127,7 +115,7 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr) #<--TODO momentum is not s
 
 #<--Train Neural network and validate with test set after completion of training every epoch
 for epoch in range(1, args.epochs + 1):
-    train(args, model, device, federated_train_loader, optimizer, epoch)
+    train(args, model, device, train_loader, optimizer, epoch)
     accuracy = test(args, model, device, test_loader)
     if int(accuracy) >= args.accuracy:
         time2 = time.time()
