@@ -22,7 +22,7 @@ class Arguments():
         self.seed = 1
         self.log_interval = 30
         self.save_model = False
-        self.accuracy = 98 
+        self.accuracy = 99 
 
 args = Arguments()
 

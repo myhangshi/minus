@@ -60,15 +60,23 @@ local or distributed/multiple hosts
 section 4 measurements 
 
 1. mnist 
-      time(s)\accuracy         98             99 
-    federated learning:         201  
-    baseline:                    99        
+ --------------------------------------------------
+      time(s)\accuracy          98%          99% 
+ --------------------------------------------------
+    federated learning:         201          773 
+ --------------------------------------------------
+    baseline:                    99          350 
+ --------------------------------------------------
                   
 
 2. cifar-10           
-      time(s)\accuracy         98             99 
+ --------------------------------------------------
+      time(s)\accuracy          98%          99% 
+ --------------------------------------------------
     federated learning:  
+ --------------------------------------------------
     baseline: 
+ --------------------------------------------------
 
 test machine:  Intel(R) Xeon(R) CPU E3-1545M v5 @ 2.90GHz
 need to set larger epoch number in order to reach 99% accuracy 
