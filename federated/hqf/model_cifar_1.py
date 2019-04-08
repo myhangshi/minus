@@ -1,10 +1,18 @@
 #Import required libraries
+#from __future__ import absolute_import 
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
+
 import time 
+
+from models.shufflenetv2  import ShuffleNetV2
+from models.vgg  import *
+
 
 class Arguments():
     def __init__(self):
@@ -110,7 +118,20 @@ def test(args, model, device, test_loader):
 train_loader,test_loader=load_data()
 
 #<--Create Neural Network model instance
-model = Net().to(device)
+#model = Net().to(device)
+model = VGG('VGG19')
+#model = ResNet18()
+#model = PreActResNet18()
+#model = GoogLeNet()
+#model = DenseNet121()
+#model = ResNeXt29_2x64d()
+#model = MobileNet()
+#model = MobileNetV2()
+#model = DPN92()
+#model = ShuffleNetG2()
+#model = SENet18()
+#model = ShuffleNetV2(1)
+
 optimizer = optim.SGD(model.parameters(), lr=args.lr) #<--TODO momentum is not supported at the moment
 
 #<--Train Neural network and validate with test set after completion of training every epoch

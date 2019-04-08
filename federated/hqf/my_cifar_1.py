@@ -12,7 +12,7 @@ class Arguments():
     def __init__(self):
         self.batch_size = 64
         self.test_batch_size = 1000
-        self.epochs = 25
+        self.epochs = 2500
         self.lr = 0.01
         self.momentum = 0.5
         self.no_cuda = True
