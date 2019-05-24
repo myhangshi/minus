@@ -11,7 +11,7 @@ def suduko(board):
 		board[r][c] = i 
 		if valid_so_far(board): 
 			result = suduko(board) 
-			if is_complete(board) 
+			if is_complete(board): 
 				return result 
 		board[r][c] = EMPTY 
 	
@@ -23,7 +23,7 @@ def is_complete(board):
 def find_first_empty(board): 
 	for i, row in enumerate(board): 
 		for j, val in enumerate(row): 
-			if val == EMPTY: 
+			if int(val) == EMPTY: 
 				return i, j 
 
 def valid_so_far(board): 
@@ -37,7 +37,7 @@ def valid_so_far(board):
 
 def rows_valid(board): 
 	for row in board: 
-		if duplicate(row): 
+		if duplicates(row): 
 			return False
 	return True 
 
@@ -66,11 +66,29 @@ def duplicates(arr):
 		c[val] = True 
 	return False 
 
-ol = ['006008070', '100600400', '004210003', '001080090', '260030184', '080060300', '600045700', '005001006', '010900500'],
+ol = [	'006008070', '100600400', '004210003',
+	 	'001080090', '260030184', '080060300', 
+	 	'600045700', '005001006', '010900500']
 
 sk = []
+
 for i, nums in enumerate(ol): 
-	sk[i] = list(nums)
+	sk.append(list(nums))
 
 print(sk)
 
+sk1 = [[0]*len(sk[0]) for _ in range(len(sk))]
+print(sk1)
+
+#convert to integer type 
+for i, row in enumerate(sk): 
+	for j, col in enumerate(row):
+		sk1[i][j] = int(sk[i][j]) #- int('0')
+
+print("\n\n")
+print(sk1)
+
+
+
+print("\n\n\n")
+print(suduko(sk1))
