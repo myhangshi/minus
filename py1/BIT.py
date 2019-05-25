@@ -16,6 +16,7 @@ class BIT:
 			index -= index & -index 
 		return total 
 	
+	
 
 class Subscribers: 
 	def __init__(self, nums): 

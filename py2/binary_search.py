@@ -14,4 +14,5 @@ def binary_search(array, x):
 
 	return -1 
 
+
 print(binary_search([3, 5, 7, 9, 11, 13], 9))
