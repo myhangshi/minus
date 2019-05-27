@@ -29,13 +29,13 @@ def get_itenerary(flights, source, destination, k):
 	return -1 
 
 flights = [ 
-('JFK', 'ATL', 150), 
-('ATL', 'SFO', 400), 
-('ORD', 'LAX', 200), 
-('LAX', 'DFW', 80), 
-('JFK', 'HKG', 800), 
-('ATL', 'ORD', 90), 
-('JFK', 'LAX', 500), 
+	('JFK', 'ATL', 150), 
+	('ATL', 'SFO', 400), 
+	('ORD', 'LAX', 200), 
+	('LAX', 'DFW', 80), 
+	('JFK', 'HKG', 800), 
+	('ATL', 'ORD', 90), 
+	('JFK', 'LAX', 500), 
 ]
 
 cost, path = get_itenerary(flights, 'JFK', 'LAX', 3)

@@ -8,21 +8,22 @@ import bisect
 
 def make_graph(C, k):
 	# Use Cartesian product to get all strings of length k+1 
-	vertices = product(C, repeat=k-1)
+	vertices = tuple(product(C, repeat=k-1))
 	print(vertices)
 
 	edges = {}
 	for v in vertices: 
 		edges[v] = [ v[1:] +  (char,)  for char in C]
 	
-	print(edges)
+	print(tuple(edges))
 	return edges 
 
 def find_eulerian_cycle(graph): 
 	cycle = []
 	start = list(graph)[0]
 	before = after = []
-	#print(list(graph))
+	print("Graph now is ") 
+	print(graph)
 
 	while graph: 
 		if cycle: 

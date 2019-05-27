@@ -5,12 +5,15 @@ from collections import OrderedDict
 
 def create_graph(words): 
 	letters = set(''.join(words))
+	print(words, letters)
 
 	graph = {letter: set() for letter in letters}
 
 	for pair in zip(words, words[1:]): 
+		print(pair)
 		for before, after in zip(*pair): 
 			if before != after: 
+				print("before:{} ;  after:{}".format(before, after))
 				graph[after].add(before)
 				break 
 	return graph 

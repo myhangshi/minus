@@ -56,7 +56,6 @@ def is_valid_complete(letters, words):
 
 def solve(letters, unassigned, nums, words): 
 	if not unassigned: 
-		
 		if is_valid_complete(letters, words): 
 			#print("SOLUTION ....", letters)
 			return letters
@@ -68,11 +67,8 @@ def solve(letters, unassigned, nums, words):
 		letters[char] = num 
 		nums.remove(num)
 
-		new_unassigned = list(unassigned[1:])
-
 		if is_valid(letters, words): 
-
-			solution = solve(letters, new_unassigned, nums, words)
+			solution = solve(letters, unassigned[1:], nums, words)
 			if solution: 
 				return solution 
 
@@ -108,6 +104,7 @@ def math_num(problem):
 
 	letters = ordered_letters(words)
 	unassigned = [letter for letter in letters if letter != '#']
+	print("letters ", letters, unassigned)
 	nums = set(range(0, 10))
 
 	#print(letters)

@@ -31,16 +31,12 @@ def is_winning(trie, prefix):
 	root = trie.find(prefix)
 
 	if '#' in root: 
-		print('False', prefix)
 		return False 
 	else: 
 		next_moves = [prefix + letter for letter in root]
-		print('NE', next_moves)
 		if any(is_winning(trie, move) for move in next_moves): 
-			print('False', prefix)
 			return False 
 		else: 
-			print('True', prefix)
 			return True 
 
 def optimal_starting_letter(words): 
@@ -49,7 +45,6 @@ def optimal_starting_letter(words):
 
 	starts = trie._trie.keys() 
 	for letter in starts: 
-		print(letter, "inside optimal")
 		if is_winning(trie, letter): 
 			winners.append(letter)
 
