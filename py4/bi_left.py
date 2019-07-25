@@ -23,6 +23,7 @@ def bi_right(nums, target, lo=0, hi=None):
     
     while lo < hi: 
         mid = (lo + hi) // 2
+        print("lo hi mid", lo, hi, mid)
         if nums[mid] > target: 
             #hi = mid - 1 #wrong, [7] 
             hi = mid 
@@ -33,14 +34,16 @@ def bi_right(nums, target, lo=0, hi=None):
 
 input = [ 3, 4, 7, 7, 7, 8, 10, 11]
 
+result = bi_right(input, 7, 0) 
+print("the result is ", result)
+
+
 result = bi_left(input, 7, 0) 
 print("the result is ", result)
 
 result = bi_left(input, 5, 0) 
 print("the result is ", result)
 
-result = bi_right(input, 7, 0) 
-print("the result is ", result)
 
 input = [6, 7] 
 result = bi_right(input, 7, 0) 
