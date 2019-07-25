@@ -14,9 +14,6 @@ def subsets(nums):
             print("run_list and result", run_list, result)
 
             for i in range(pos, len(nums)):
-                if i != pos and nums[i] == nums[i-1]: 
-                    continue 
-
                 run_list.append(nums[i])
                 print("invoke ", i, pos, run_list) 
                 gen_subsets(run_list, i + 1)
