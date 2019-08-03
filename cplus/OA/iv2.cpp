@@ -34,6 +34,39 @@ Node* mirrorTree(Node *root) {
     return newRoot; 
 }
 
+void inOrderTraverse(Node *root, vector<vector<int>> & result, int level) { 
+    if (!root) return; 
+
+    if (level >= result.size()) { 
+        result.push_back(vector<int>()); 
+    }
+
+    inOrderTraverse(root->left, result, level + 1); 
+    result[level].push_back(root->val); 
+    inOrderTraverse(root->right, result, level + 1); 
+}
+
+void printTree(vector<vector<int>> & result) {
+    for (const auto & e: result) { 
+        for (auto i: e) { 
+            cout << i << "  "; 
+        }
+        cout << endl; 
+    }     
+}
+
+vector<vector<int>> serializeTree(Node *root) { 
+    vector<vector<int>> result; 
+    int level = 0; 
+
+    if (!root) { 
+        return result; 
+    }
+
+    inOrderTraverse(root, result, level); 
+    return result; 
+}
+
 /*
         0. create queue<Node*, Node*> q to record current node and its parent node
         1. create new root, enqueue (root, newroot)     
@@ -86,6 +119,25 @@ Node* mirrorTreeIterative(Node *root) {
     return newRoot; 
 }  
 
+
+bool isMirroredVector(vector<vector<int>> &r1, vector<vector<int>> & r2) 
+{ 
+    if (r1.size() != r2.size()) return false; 
+
+    int n1 = r1.size(); 
+    for (int i = 0; i < n1; ++i) { 
+        if (r1[i].size() != r2[i].size()) return false; 
+        int n2 = r1[i].size(); 
+        for (int j = 0; j < n2; ++j) { 
+            if (r1[i][j] != r2[i][n2-1-j]) { 
+                return false; 
+            } 
+        }
+    }
+    
+    return true; 
+}
+
 bool isMirroredTree(Node *root1, Node *root2) { 
     if (!root1 && !root2) { 
         return true; 
@@ -123,16 +175,33 @@ int main()
     
     bool isMirrored; 
 
+    // test mirrored tree recursive, postive test case
     Node *newRoot = mirrorTree(p5); 
     isMirrored = isMirroredTree(newRoot, p5); 
     cout << "is Mirrored Tree " << isMirrored << endl; 
 
+
+    // negative test case 
     Node *p6 = new Node{6, nullptr, nullptr}; 
     isMirrored = isMirroredTree(newRoot, p6); 
     cout << "is Mirrored Tree " << isMirrored << endl; 
 
+    // iterative version 
     Node* p7 = mirrorTreeIterative(p5); 
     isMirrored = isMirroredTree(p7, p5); 
+    cout << "is Mirrored Tree " << isMirrored << endl; 
+
+    // serialize p5, p7, two mirrored trees 
+    vector<vector<int>> r5 = serializeTree(p5); 
+    cout << "working on next tree " << endl; 
+
+    vector<vector<int>> r7 = serializeTree(p7); 
+    cout << "Print Trees: " << endl; 
+    printTree(r5); 
+    cout << "............." << endl; 
+    printTree(r7); 
+    cout << "............." << endl; 
+    isMirrored = isMirroredVector(r5, r7); 
     cout << "is Mirrored Tree " << isMirrored << endl; 
 
 
