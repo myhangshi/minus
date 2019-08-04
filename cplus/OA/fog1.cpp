@@ -1,3 +1,16 @@
+/*
+
+// 1 -- no , 2 -- no, 3 -- yes, 
+// 4 -- no,  5 -- yes, 6 -- no 
+// 7 -- yes, 8 -- no, 
+
+3k + 1, 3k, 3k+ 2
+
+k = 3, f(n) = f(n - 3 + 1) = f(n - 2)
+in general: 
+    f(n) = f(n - k + 1) 
+*/ 
+
 #include <iostream>
 #include <vector> 
 
