@@ -47,7 +47,11 @@ int main() {
   for (const string& word : words) {
     cout << word;
   }
+  string test = "test one"; 
+  int l = test.length(); 
+  cout << "length is " << l << endl; 
 
+  return 0; 
   vector<int> nums = {-2,2,-3,4,-1,2,1,-5,3};
   int result = maxSubarray4(nums, 5); 
   cout << "result is "<< result << endl; 
