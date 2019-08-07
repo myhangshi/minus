@@ -50,6 +50,12 @@ vector<string> findAndReplacePattern(vector<string> &words, string &pattern) {
 
 int main() { 
   cout << "hello world"<< endl; 
+  int i = 0; 
+  while (i++ < 5) { 
+	  cout << " House "<< i << endl; 
+  } 
+  return 0; 
+
   // vector<string> words{"abc","deq","mee","aqq","dkd","ccc"}; 
   vector<string> words{"ccc"}; 
   string pattern = "abb"; 
